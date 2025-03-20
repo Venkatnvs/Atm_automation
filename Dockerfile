@@ -46,7 +46,7 @@ COPY . .
 
 # Securely mount secrets (environment file & Firebase JSON) during build
 RUN --mount=type=secret,id=_env,dst=/etc/secrets/.env \
-    --mount=type=secret,id=firebase,dst=/etc/secrets/firebase.json \
+    --mount=type=secret,id=firebase_json,dst=/etc/secrets/firebase.json \
     cp /etc/secrets/.env /app/.env && \
     cp /etc/secrets/firebase.json /app/firebase.json
 
