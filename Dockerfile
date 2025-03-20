@@ -46,9 +46,9 @@ COPY . .
 
 # Securely mount secrets (environment file & Firebase JSON) during build
 RUN --mount=type=secret,id=_env,dst=/etc/secrets/.env \
-    --mount=type=secret,id=atm-54854-firebase-adminsdk-fbsvc-846f36282a,dst=/etc/secrets/atm-54854-firebase-adminsdk-fbsvc-846f36282a.json \
+    --mount=type=secret,id=firebase,dst=/etc/secrets/firebase.json \
     cp /etc/secrets/.env /app/.env && \
-    cp /etc/secrets/atm-54854-firebase-adminsdk-fbsvc-846f36282a.json /app/atm-54854-firebase-adminsdk-fbsvc-846f36282a.json
+    cp /etc/secrets/firebase.json /app/firebase.json
 
 # Expose the port Flask will run on
 EXPOSE 5000

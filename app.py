@@ -109,7 +109,7 @@ def handle_check_otp_status():
     global current_verification
     if current_verification:
         current_time = datetime.now().timestamp()
-        if current_time - current_verification['timestamp'] > 300:  # 5 minutes
+        if current_time - current_verification['timestamp'] > 120:
             current_verification = None
             emit('otp_status', {'verification': None})
         else:
@@ -120,7 +120,7 @@ def handle_check_otp_status():
 @app.route('/face_recognition', methods=['POST'])
 def face_recognition():
     global current_verification
-    if current_verification:
+    if current_verification and current_verification.get('timestamp') and datetime.now().timestamp() - current_verification.get('timestamp') < 120:
         return jsonify({
             'status': 'error',
             'message': 'Another verification is in progress'
