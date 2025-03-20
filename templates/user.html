@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>User Images</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#e87217',
+                        secondary: '#a65208',
+                        accent: '#EC4899',
+                        background: '#F9FAFB',
+                        surface: '#FFFFFF',
+                        text: '#1F2937',
+                        'text-light': '#6B7280',
+                    },
+                    boxShadow: {
+                        'material': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'material-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-background to-gray-100 min-h-screen">
+    <div class="container mx-auto px-6 py-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-text mb-1">User Images</h1>
+                <p class="text-text-light text-sm">View and manage user face recognition data</p>
+            </div>
+            <a href="{{ url_for('index') }}" 
+                class="flex items-center text-primary hover:text-secondary transition-colors px-4 py-2 rounded-lg hover:bg-primary hover:bg-opacity-10">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+        </div>
+
+        {% if images %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for image in images %}
+            <div class="bg-surface rounded-2xl shadow-material hover:shadow-material-lg transition-all duration-300 overflow-hidden transform hover:-translate-y-1">
+                <div class="relative group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                    <img src="{{ image.image_url }}" class="w-full h-56 object-cover">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
+                        <button onclick="openImageModal('{{ image.image_url }}')" 
+                            class="opacity-0 group-hover:opacity-100 transform scale-0 group-hover:scale-100 transition-all duration-300 bg-surface text-text px-4 py-2 rounded-lg hover:bg-gray-50 shadow-material">
+                            <i class="fas fa-search-plus mr-2"></i> View Full Size
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm text-text-light flex items-center">
+                        <i class="far fa-clock mr-2"></i>
+                        {{ image.timestamp.split('T')[0] }} {{ image.timestamp.split('T')[1].split('.')[0] }}
+                    </p>
+                </div>
+                {% if not image.is_verified %}
+                    <div class="absolute top-0 right-0 bg-red-500 text-white px-2 py-1 rounded-full text-xs">
+                        Unverified
+                    </div>
+                {% else %}
+                    <div class="absolute top-0 right-0 bg-green-500 text-white px-2 py-1 rounded-full text-xs">
+                        Verified
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 bg-surface rounded-2xl shadow-material">
+            <div class="text-primary opacity-50 mb-4">
+                <i class="fas fa-images text-5xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-text mb-2">No Images Found</h3>
+            <p class="text-text-light text-sm max-w-md mx-auto">This user hasn't uploaded any images yet. Images will appear here once they are captured.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+        <div class="relative max-w-3xl w-full mx-4">
+            <button onclick="closeImageModal()" 
+                class="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <img id="modalImage" src="" class="w-full rounded-2xl shadow-material-lg">
+        </div>
+    </div>
+
+    <script>
+        function openImageModal(imageUrl) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            modalImage.src = imageUrl;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Close modal when clicking outside the image
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+        setInterval(function() {
+            location.reload();
+        }, 5000);
+    </script>
+</body>
+</html>

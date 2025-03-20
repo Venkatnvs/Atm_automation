@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ATM Recognition System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#e87217',
+                        secondary: '#a65208',
+                        accent: '#EC4899',
+                        background: '#F9FAFB',
+                        surface: '#FFFFFF',
+                        text: '#1F2937',
+                        'text-light': '#6B7280',
+                    },
+                    boxShadow: {
+                        'material': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'material-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-background to-gray-100 min-h-screen">
+    <div class="container mx-auto px-6 py-8">
+        <div class="border-2 border-primary rounded-lg p-2 mx-auto max-w-xl mb-5">
+            <h1 class="text-4xl font-bold text-center text-text mb-2">ATM Recognition System</h1>
+        </div>
+        
+        <div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+            <div class="bg-surface rounded-2xl p-6 max-w-xl w-full mx-4 shadow-material-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-text">Add New User</h2>
+                    <button onclick="closeAddUserModal()" class="text-text-light hover:text-text transition-colors">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                <form action="{{ url_for('add_user') }}" method="post" enctype="multipart/form-data" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-text mb-1">Name</label>
+                        <input type="text" name="name" required
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-text mb-1">Email</label>
+                        <input type="email" name="email" required
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-text mb-1">UUID</label>
+                        <input type="text" name="uuid" required
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-text mb-1">Face Image</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="relative">
+                                <div class="mt-1 flex justify-center px-4 pt-4 pb-5 border-2 border-gray-200 border-dashed rounded-lg hover:border-primary transition-colors bg-gray-50">
+                                    <div class="space-y-1 text-center">
+                                        <div class="flex text-sm text-text-light">
+                                            <label class="relative cursor-pointer rounded-md font-medium text-primary hover:text-secondary focus-within:outline-none">
+                                                <span>Upload a file</span>
+                                                <input type="file" name="face_img" accept="image/*" class="sr-only" onchange="previewImage(this)">
+                                            </label>
+                                            <p class="pl-1">or drag and drop</p>
+                                        </div>
+                                        <p class="text-xs text-text-light">PNG, JPG, GIF up to 10MB</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <button type="button" onclick="startCamera()" 
+                                    class="w-full h-full flex flex-col justify-center items-center px-4 pt-4 pb-5 border-2 border-gray-200 border-dashed rounded-lg hover:border-primary transition-colors bg-gray-50">
+                                    <i class="fas fa-camera text-xl text-text-light mb-2"></i>
+                                    <span class="text-sm text-text-light">Use Camera</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="imagePreview" class="mt-3 hidden">
+                            <img id="preview" class="mx-auto h-28 w-28 object-cover rounded-lg shadow-material">
+                        </div>
+                        <div id="cameraPreview" class="mt-3 hidden">
+                            <div class="relative mx-auto w-28 h-28">
+                                <video id="video" class="w-full h-full object-cover rounded-lg shadow-material"></video>
+                                <div id="cameraLoading" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg hidden">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+                                </div>
+                                <div id="cameraError" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg hidden">
+                                    <div class="text-white text-center p-2">
+                                        <i class="fas fa-exclamation-circle text-xl mb-2"></i>
+                                        <p class="text-xs">Camera access denied</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-center mt-2 space-x-3">
+                                <button type="button" onclick="captureImage()" 
+                                    class="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-secondary transition-colors shadow-material">
+                                    <i class="fas fa-camera mr-2"></i> Capture
+                                </button>
+                                <button type="button" onclick="stopCamera()" 
+                                    class="px-3 py-1.5 bg-accent text-white rounded-lg hover:bg-pink-600 transition-colors shadow-material">
+                                    <i class="fas fa-stop mr-2"></i> Stop
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeAddUserModal()"
+                            class="px-4 py-2 border border-gray-200 rounded-lg text-text hover:bg-gray-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors shadow-material">
+                            Add User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-surface rounded-2xl shadow-material hover:shadow-material-lg transition-all duration-300 overflow-hidden cursor-pointer transform hover:-translate-y-1" onclick="openAddUserModal()">
+                <div class="h-full flex flex-col items-center justify-center p-6 text-center">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary bg-opacity-10 flex items-center justify-center mb-4">
+                        <i class="fas fa-plus text-3xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-text mb-2">Add New User</h3>
+                    <p class="text-text-light text-sm">Register a new user with face recognition</p>
+                </div>
+            </div>
+
+            {% for user_id, user in users.items() %}
+            <div class="bg-surface rounded-2xl shadow-material hover:shadow-material-lg transition-all duration-300 overflow-hidden transform hover:-translate-y-1">
+                <div class="p-6">
+                    <div class="flex flex-col items-center space-y-3">
+                        <div class="group relative">
+                            <div class="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                            <img src="{{ user.face_url }}" class="w-20 h-20 rounded-xl object-cover shadow-material">
+                        </div>
+                        <div class="text-center">
+                            <h3 class="text-xl font-semibold text-text mb-1">{{ user.name }}</h3>
+                            <p class="text-text-light text-sm">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex space-x-3">
+                        <a href="{{ url_for('user_details', user_id=user_id) }}" 
+                            class="flex-1 px-3 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-opacity text-center shadow-material">
+                            <i class="fas fa-eye mr-2"></i>View Details
+                        </a>
+                        <button onclick="confirmDeleteUser('{{ user_id }}', '{{ user.name }}')"
+                            class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-material flex items-center justify-center">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-surface rounded-2xl p-6 max-w-sm w-full mx-4 shadow-material-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-text">Delete User</h2>
+                <button onclick="closeDeleteModal()" class="text-text-light hover:text-text transition-colors">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <p id="deleteMessage" class="text-text-light mb-4"></p>
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeDeleteModal()"
+                        class="px-4 py-2 border border-gray-200 rounded-lg text-text hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="deleteUser()"
+                        class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-material">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP Modal -->
+    <div id="otpModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-surface rounded-2xl p-6 max-w-sm w-full mx-4 shadow-material-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h5 class="text-xl font-semibold text-text">Enter OTP</h5>
+                <button onclick="closeOTPModal()" class="text-text-light hover:text-text transition-colors">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <p id="otpMessage" class="text-text-light mb-4"></p>
+                <input type="text" id="otpInput" maxlength="6"
+                    class="w-full px-3 py-2 text-center text-2xl tracking-widest border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-gray-50">
+                <button onclick="verifyOTP()"
+                    class="mt-6 w-full px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-opacity shadow-material">
+                    Verify OTP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Face Recognition Failed Modal -->
+    <div id="faceRecognitionFailedModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-surface rounded-2xl p-6 max-w-sm w-full mx-4 shadow-material-lg">
+            <img id="faceRecognitionFailedImage" src="" class="w-20 h-20 mx-auto mb-4">
+            <h5 class="text-xl font-semibold text-text">Face Recognition Failed</h5>
+            <p class="text-text-light mb-4">Please try again.</p>
+            <button onclick="closeFaceRecognitionFailedModal()"
+                class="mt-6 w-full px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:opacity-90 transition-opacity shadow-material">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentUserId = null;
+        let stream = null;
+        let video = null;
+        let socket = null;
+        let userToDelete = null;
+
+        // Initialize Socket.IO
+        document.addEventListener('DOMContentLoaded', () => {
+            socket = io();
+            
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                socket.emit('check_otp_status');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+            });
+
+            socket.on('otp_status', (data) => {
+                console.log(data);
+                const verification = data?.verification;
+                if (verification && verification?.email) {
+                    currentUserId = verification.user_id;
+                    showOTPModal(verification);
+                } else if (!verification || !verification?.email) {
+                    currentUserId = null;
+                    closeOTPModal();
+                }
+            });
+
+            socket.on('face_recognition_failed', (data) => {
+                console.log(data);
+                const imageUrl = data?.image_url;
+                if (imageUrl) {
+                    document.getElementById('faceRecognitionFailedModal').classList.remove('hidden');
+                    document.getElementById('faceRecognitionFailedModal').classList.add('flex');
+                    document.getElementById('faceRecognitionFailedImage').src = imageUrl;
+                }
+            });
+        });
+
+        function openAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+            document.getElementById('addUserModal').classList.add('flex');
+            // Reset form when opening modal
+            document.getElementById('preview').src = '';
+            document.querySelector('input[name="face_img"]').value = '';
+            document.getElementById('imagePreview').classList.add('hidden');
+        }
+
+        function closeAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('flex');
+            document.getElementById('addUserModal').classList.add('hidden');
+            stopCamera();
+        }
+
+        async function startCamera() {
+            const videoElement = document.getElementById('video');
+            const loadingElement = document.getElementById('cameraLoading');
+            const errorElement = document.getElementById('cameraError');
+            const previewElement = document.getElementById('imagePreview');
+            
+            // Reset states
+            loadingElement.classList.remove('hidden');
+            errorElement.classList.add('hidden');
+            previewElement.classList.add('hidden');
+            
+            try {
+                // Request camera with specific constraints for better quality
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: "user"
+                    }
+                });
+                
+                videoElement.srcObject = stream;
+                document.getElementById('cameraPreview').classList.remove('hidden');
+                
+                // Wait for video to be ready
+                await new Promise((resolve) => {
+                    videoElement.onloadedmetadata = () => {
+                        videoElement.play();
+                        resolve();
+                    };
+                });
+                
+                loadingElement.classList.add('hidden');
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                loadingElement.classList.add('hidden');
+                errorElement.classList.remove('hidden');
+                
+                // Show specific error message based on the error type
+                let errorMessage = 'Error accessing camera. ';
+                if (err.name === 'NotAllowedError') {
+                    errorMessage += 'Please allow camera access in your browser settings.';
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage += 'No camera found. Please connect a camera and try again.';
+                } else if (err.name === 'NotReadableError') {
+                    errorMessage += 'Camera is in use by another application.';
+                } else {
+                    errorMessage += 'Please try again.';
+                }
+                
+                alert(errorMessage);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                document.getElementById('cameraPreview').classList.add('hidden');
+            }
+        }
+
+        function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const preview = document.getElementById('preview');
+            const fileInput = document.querySelector('input[name="face_img"]');
+            
+            // Set canvas size to match video dimensions
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw the current video frame on the canvas
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to JPEG with good quality
+            canvas.toBlob(function(blob) {
+                // Create a File object from the blob
+                const file = new File([blob], "captured_image.jpg", { type: "image/jpeg" });
+                
+                // Create a DataTransfer object and add the file
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                
+                // Set the file input's files
+                fileInput.files = dataTransfer.files;
+                
+                // Show preview
+                preview.src = URL.createObjectURL(file);
+                document.getElementById('imagePreview').classList.remove('hidden');
+            }, 'image/jpeg', 0.9);
+            
+            // Hide camera preview
+            document.getElementById('cameraPreview').classList.add('hidden');
+            
+            // Stop camera
+            stopCamera();
+        }
+
+        function previewImage(input) {
+            const preview = document.getElementById('preview');
+            const previewDiv = document.getElementById('imagePreview');
+            
+            if (input.files && input.files[0]) {
+                preview.src = URL.createObjectURL(input.files[0]);
+                previewDiv.classList.remove('hidden');
+            }
+        }
+
+        function showOTPModal(verification) {
+            const modal = document.getElementById('otpModal');
+            const message = document.getElementById('otpMessage');
+            const input = document.getElementById('otpInput');
+            
+            message.textContent = `Please enter the OTP sent to ${verification.email}`;
+            input.dataset.userId = verification.user_id;
+            input.value = '';
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            input.focus();
+        }
+
+        function closeOTPModal() {
+            const modal = document.getElementById('otpModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function verifyOTP() {
+            const otp = document.getElementById('otpInput').value;
+            const userId = document.getElementById('otpInput').dataset.userId;
+
+            fetch('/verify_otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    otp: otp
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    alert('OTP verified successfully!');
+                    closeOTPModal();
+                } else {
+                    alert(result.message || 'Invalid OTP');
+                }
+            })
+            .catch(error => {
+                alert('Error verifying OTP');
+                console.error('Error:', error);
+            });
+        }
+
+        function confirmDeleteUser(userId, userName) {
+            userToDelete = userId;
+            document.getElementById('deleteMessage').textContent = `Are you sure you want to delete ${userName}?`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('deleteModal').classList.add('flex');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            document.getElementById('deleteModal').classList.remove('flex');
+            userToDelete = null;
+        }
+
+        function deleteUser() {
+            if (!userToDelete) return;
+
+            fetch(`/delete_user/${userToDelete}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert(result.message || 'Error deleting user');
+                }
+            })
+            .catch(error => {
+                alert('Error deleting user');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                closeDeleteModal();
+            });
+        }
+
+        function closeFaceRecognitionFailedModal() {
+            const modal = document.getElementById('faceRecognitionFailedModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    </script>
+</body>
+</html>
