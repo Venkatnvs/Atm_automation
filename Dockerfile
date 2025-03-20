@@ -23,9 +23,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     liblapack-dev \
     libswscale-dev \
+    libgl1-mesa-glx \
     pkg-config \
     python3-dev \
     python3-numpy \
+    python3-opencv \
     software-properties-common \
     zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*

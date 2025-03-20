@@ -132,4 +132,4 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-atm-54854-firebase-adminsdk-fbsvc-846f36282a.json
+firebase.json
