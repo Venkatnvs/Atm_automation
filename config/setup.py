@@ -14,7 +14,7 @@ def initialize_cloudinary():
 
 
 # Firebase setup
-cred = credentials.Certificate("atm-54854-firebase-adminsdk-fbsvc-846f36282a.json")
+cred = credentials.Certificate("firebase.json")
 
 def initialize_firebase():
     firebase_admin.initialize_app(cred, {"databaseURL": "https://atm-54854-default-rtdb.asia-southeast1.firebasedatabase.app/"})
