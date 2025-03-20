@@ -1,6 +1,9 @@
 # Use an official Python image
 FROM python:3.10
 
+# Enable BuildKit for secure secret handling
+ENV DOCKER_BUILDKIT=1
+
 # Set the working directory
 WORKDIR /app
 
@@ -14,18 +17,18 @@ RUN apt update && apt install -y \
     libx11-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install dependencies
+# Copy only requirements to leverage Docker caching
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy application files (excluding secrets)
 COPY . .
 
-COPY .env /app/.env
-COPY atm-54854-firebase-adminsdk-fbsvc-846f36282a.json /app/atm-54854-firebase-adminsdk-fbsvc-846f36282a.json
-
-# Set environment variables using `source` (for Docker Compose use)
-RUN export $(grep -v '^#' /app/.env | xargs)
+# Securely mount secrets (environment file & Firebase JSON)
+RUN --mount=type=secret,id=_env,dst=/etc/secrets/.env cat /etc/secrets/.env
+RUN --mount=type=secret,id=firebase,dst=/etc/secrets/atm-54854-firebase-adminsdk-fbsvc-846f36282a.json cat /etc/secrets/atm-54854-firebase-adminsdk-fbsvc-846f36282a.json
 
 # Expose the port Flask will run on
 EXPOSE 5000
