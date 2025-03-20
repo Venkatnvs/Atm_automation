@@ -21,6 +21,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY . .
 
+COPY .env /app/.env
+COPY atm-54854-firebase-adminsdk-fbsvc-846f36282a.json /app/atm-54854-firebase-adminsdk-fbsvc-846f36282a.json
+
+# Set environment variables using `source` (for Docker Compose use)
+RUN export $(grep -v '^#' /app/.env | xargs)
+
 # Expose the port Flask will run on
 EXPOSE 5000
 
