@@ -3,7 +3,7 @@ flask-socketio
 python-socketio
 python-engineio
 cmake
-dlib
+dlib-binary
 opencv-python
 numpy
 Pillow
