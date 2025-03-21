@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>User Images</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -34,7 +36,7 @@
                 <p class="text-text-light text-sm">View and manage user face recognition data</p>
             </div>
             <a href="{{ url_for('index') }}" 
-                class="flex items-center text-primary hover:text-secondary transition-colors px-4 py-2 rounded-lg hover:bg-primary hover:bg-opacity-10">
+                class="flex items-center text-primary hover:text-secondary transition-colors px-4 py-2 rounded-lg hover:bg-primary hover:bg-opacity-10 border border-primary">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
             </a>
         </div>
@@ -56,7 +58,7 @@
                 <div class="p-4">
                     <p class="text-sm text-text-light flex items-center">
                         <i class="far fa-clock mr-2"></i>
-                        {{ image.timestamp.split('T')[0] }} {{ image.timestamp.split('T')[1].split('.')[0] }}
+                        {{ image.timestamp | format_datetime }}
                     </p>
                 </div>
                 {% if not image.is_verified %}

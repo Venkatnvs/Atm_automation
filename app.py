@@ -6,7 +6,7 @@ from flask_socketio import SocketIO, emit
 from config.setup import initialize_firebase, initialize_cloudinary
 from subapps.face import add_new_face, process_image, remove_user_encodings
 import threading
-from subapps.utils import upload_to_cloudinary
+from subapps.utils import upload_to_cloudinary, format_datetime
 import cv2
 import numpy as np
 from datetime import datetime
@@ -20,6 +20,7 @@ initialize_cloudinary()
 db = initialize_firebase()
 
 app = Flask(__name__, template_folder="templates")
+app.jinja_env.filters['format_datetime'] = format_datetime
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 if not os.path.exists("uploads"):
