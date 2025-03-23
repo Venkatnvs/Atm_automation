@@ -158,7 +158,7 @@ def face_recognition():
         "is_verified": True if result == current_user_id else False
     })
     
-    if result and result != "Unknown":
+    if result and result != "Unknown" and result != current_user_id:
         user_id = current_user_id
         user_data = db.reference(f"users/{user_id}").get()
         if user_data and 'email' in user_data:
