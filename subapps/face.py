@@ -24,8 +24,8 @@ known_uuids = data["uuids"]
 
 print(f"Loaded {len(known_encodings)} encodings.")
 
-# Tolerance for recognition
-tolerance = 0.8
+# Tolerance for recognition (lower value = more strict matching)
+tolerance = 0.6
 
 def remove_user_encodings(user_id):
     global known_encodings, known_uuids
@@ -44,10 +44,17 @@ def recognize_face(face_encoding):
 
     distances = np.linalg.norm(known_encodings - face_encoding, axis=1)
     min_distance = np.min(distances)
-
-    if min_distance < tolerance:
+    
+    # Calculate confidence score (1 - distance)
+    confidence = 1 - min_distance
+    
+    # Only return a match if confidence is high enough
+    if min_distance < tolerance and confidence > 0.4:
         index = np.argmin(distances)
+        print(f"Match found with confidence: {confidence:.2f}")
         return known_uuids[index]
+    else:
+        print(f"No match found. Best confidence: {confidence:.2f}")
     return "Unknown"
 
 # Add new face
