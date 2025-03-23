@@ -41,7 +41,7 @@ def send_otp_email(email, otp):
     msg['To'] = email
     msg['Subject'] = "Your OTP for Face Recognition"
     
-    body = f"Your OTP is: {otp}. This OTP will expire in 5 minutes."
+    body = f"Your OTP is: {otp}. This OTP will expire in 2 minutes."
     msg.attach(MIMEText(body, 'plain'))
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -158,7 +158,7 @@ def face_recognition():
         "is_verified": True if result == current_user_id else False
     })
     
-    if result:
+    if result and result != "Unknown":
         user_id = current_user_id
         user_data = db.reference(f"users/{user_id}").get()
         if user_data and 'email' in user_data:
@@ -209,7 +209,7 @@ def verify_otp():
     
     if user_id in otp_store:
         stored_data = otp_store[user_id]
-        if datetime.now().timestamp() - stored_data['timestamp'] > 300:
+        if datetime.now().timestamp() - stored_data['timestamp'] > 120:
             del otp_store[user_id]
             current_verification = None
             socketio.emit('otp_status', {'verification': None})
